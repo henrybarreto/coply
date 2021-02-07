@@ -1,41 +1,11 @@
-use std::{cell::RefCell, rc::Rc};
-
 use coply::coply::*;
-
 #[test]
-fn check_chunk_creation() {
-    let c_1 = Rc::new(RefCell::new(Chunk::new(ChunkData::Data(Box::new([1; 128])))));
-    let c_2 = Rc::new(RefCell::new(Chunk::new(ChunkData::Data(Box::new([2; 128])))));
-    let c_3 = Rc::new(RefCell::new(Chunk::new(ChunkData::Data(Box::new([3; 128])))));
+fn creating_chunk_chain() {
+    let mut c_1 = Chunk::new(ChunkData::Data(vec![6; 128]));
+    let mut c_2 = Chunk::new(ChunkData::Data(vec![7; 128]));
+    let mut c_3 = Chunk::new(ChunkData::Data(vec![8; 110]));
 
-    c_3.clone().try_borrow_mut().unwrap().next = None;
-    c_2.clone().try_borrow_mut().unwrap().next = Some(c_3.clone());
-    c_1.clone().try_borrow_mut().unwrap().next = Some(c_2.clone());
-
-    assert_eq!(
-        *c_3.clone().try_borrow_mut().unwrap().data.unwrap(),
-        *Box::new([3; 128]));
-    assert_eq!(
-        *c_2.clone().try_borrow_mut().unwrap().data.unwrap(),
-        *Box::new([2; 128]));
-    assert_eq!(
-        *c_1.clone().try_borrow_mut().unwrap().data.unwrap(),
-        *Box::new([1; 128]));
-
-}
-#[test]
-fn check_chunk_change_through_reference() {
-    let c_1 = Rc::new(RefCell::new(Chunk::new(ChunkData::Data(Box::new([1; 128])))));
-    let c_2 = Rc::new(RefCell::new(Chunk::new(ChunkData::Data(Box::new([2; 128])))));
-    let c_3 = Rc::new(RefCell::new(Chunk::new(ChunkData::Data(Box::new([3; 128])))));
-
-    c_3.clone().try_borrow_mut().unwrap().next = None;
-    c_2.clone().try_borrow_mut().unwrap().next = Some(c_3.clone());
-    c_1.clone().try_borrow_mut().unwrap().next = Some(c_2.clone());
-
-    c_2.clone().try_borrow_mut().unwrap().data = ChunkData::Data(Box::new([5; 128]));
-
-    assert_eq!(
-        *c_2.clone().try_borrow_mut().unwrap().data.unwrap(),
-        *Box::new([5; 128]));
+    c_1.next = ChunkOpt::None;
+    c_2.next = Chunk::set_option(c_1);
+    c_3.next = Chunk::set_option(c_2);
 }
