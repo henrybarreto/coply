@@ -123,30 +123,17 @@ pub mod coply {
             let interation = Interation::new(file_size, CHUNK_SIZE);
 
             let buffer = RefCell::new(Buffer::new());
-            interation.iter(
-                |bytes| {
-                    let mut data: Vec<u8> = vec![0; bytes as usize];
-                    file.try_clone()
-                        .expect("Could not clone the file")
-                        .read(&mut data[..])
-                        .expect("Could not read from the file");
-                    buffer
-                        .try_borrow_mut()
-                        .expect("Could not borrow the buffer to a normal interation")
-                        .add_data(ChunkData::Data(data));
-                },
-                |last_bytes| {
-                    let mut data: Vec<u8> = vec![0; last_bytes as usize];
-                    file.try_clone()
-                        .expect("Could not clone the file")
-                        .read(&mut data[..])
-                        .expect("Could not read from the file");
-                    buffer
-                        .try_borrow_mut()
-                        .expect("Could not borrow the buffer to the last interation")
-                        .add_data(ChunkData::Data(data));
-                },
-            );
+            interation.iter(|bytes| {
+                let mut data: Vec<u8> = vec![0; bytes as usize];
+                file.try_clone()
+                    .expect("Could not clone the file")
+                    .read(&mut data[..])
+                    .expect("Could not read from the file");
+                buffer
+                    .try_borrow_mut()
+                    .expect("Could not borrow the buffer to a normal interation")
+                    .add_data(ChunkData::Data(data));
+            });
             self.buffers
                 .push(buffer.try_borrow_mut().unwrap().to_owned());
 
@@ -175,14 +162,13 @@ pub mod coply {
                 }
             }
         }
-        pub fn iter<N, L>(&self, mut iter: N, iter_last: L)
+        pub fn iter<N>(&self, mut iter: N)
         where
             N: FnMut(u8) -> (),
-            L: Fn(u8) -> (),
         {
             for i in 1..self.count + 1 {
                 if self.is_last(i) {
-                    iter_last(self.last_bytes);
+                    iter(self.last_bytes);
                 } else {
                     iter(self.bytes);
                 }
