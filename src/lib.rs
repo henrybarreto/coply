@@ -1,5 +1,5 @@
 pub mod coply {
-    use std::{borrow::{Borrow, BorrowMut}, cell::RefCell, fs::{File, Metadata, metadata}, io::Read, rc::Rc};
+    use std::{borrow::{BorrowMut}, cell::RefCell, fs::{File, Metadata, metadata}, io::{Read, Seek, SeekFrom}, rc::Rc};
 
     pub const CHUNK_SIZE: u8 = 128;
     pub const CHUNKS_BY_BUFFER: u32 = 4;
@@ -45,7 +45,7 @@ pub mod coply {
             chunk_opt.clone().unwrap()
         }
         pub fn get_from_option(chunk_opt: ChunkOpt) -> Chunk {
-            Chunk::get_from_reference(chunk_opt.clone().unwrap())
+            Chunk::get_from_reference(chunk_opt.clone().expect("Cloud not get chunk from option"))
         }
         pub fn get_from_reference(chunk_ref: ChunkRef) -> Chunk {
             chunk_ref
@@ -99,24 +99,49 @@ pub mod coply {
     }
 
     #[derive(Debug)]
-    pub struct Manager {
+    pub struct Reader {
         pub buffers: Vec<Buffer>,
         pub file: File,
         pub file_info: Metadata,
         pub interation: Interation
     }
 
-    impl Manager {
+    impl Reader {
         pub fn new(file_path: &str) -> Self {
-            let mut file = File::open(file_path).unwrap();
-            let file_info = Manager::get_file_info(file_path);
+            let file = File::open(file_path).unwrap();
+            let file_info = Reader::get_file_info(file_path);
             let file_size = file_info.len();
             let interation = Interation::new(file_size, CHUNK_SIZE);
-            Manager {
+            Reader {
                 buffers: Vec::new(),
                 file,
                 file_info,
                 interation
+            }
+        }
+        pub fn read(&mut self) -> Vec<Buffer> { // What is happing here?
+            if self.interation.actual_step <= self.interation.steps { // Interation and Reader are hardly linked...
+                let file = self.file.borrow_mut();
+                let mut buffer = Buffer::new();
+                let interation = self.interation.borrow_mut();
+                interation.iter(|bytes| {
+                    let mut data: Vec<u8> = vec![0; bytes as usize];
+                    file.borrow_mut().read(&mut data).unwrap();
+                    buffer.borrow_mut().add_data(ChunkData::Data(data));
+                });
+
+                let mut buffers = self.buffers.to_owned();
+                buffers.push(buffer);
+                self.buffers = buffers.clone();
+                buffers
+            } else {
+                /*
+                 * interation.iter and its internal condition checks bytes size to read
+                 * in this scope, the condition avoid panic of the line 48
+                 * I guess it is highly coupled
+                 * REFACTOR EITHER READER, INTERATION OR BOTH
+                 */
+                self.buffers.to_owned()
             }
         }
         fn get_file_info(file_path: &str) -> Metadata {
@@ -124,55 +149,9 @@ pub mod coply {
                 metadata(file_path.clone()).expect("Could not get the metada from the file");
             file_info
         }
-    
-        pub fn read(&mut self) -> Vec<Buffer> {
-            let mut buffer = Buffer::new();
-            let interation = self.interation.borrow_mut();
-            let file = self.file.borrow_mut();
-            interation.iter(|bytes| {
-                let mut data: Vec<u8> = vec![0; bytes as usize];
-                file.read(&mut data).unwrap();
-                buffer.borrow_mut().add_data(ChunkData::Data(data));
-            });
-
-            let mut buffers = self.buffers.to_owned();
-            buffers.push(buffer);
-            self.buffers = buffers.clone();
-            buffers
-            /*self.interation.borrow_mut().iter(|bytes| {
-                let mut data: Vec<u8> = vec![0; bytes as usize];
-                self.t().file.read(&mut data[..]).unwrap();
-                buffer.add_data(ChunkData::Data(data));
-            });*/
-            
-            //self.buffers.push(buffer);
-            //self.buffers.clone().to_owned()
-            //let file = Rc::new(File::open(file_path.clone()).expect("Could not open the file"));
-            //let file_info =
-            //    metadata(file_path.clone()).expect("Could not get the metada from the file");
-            //let file_size = file_info.len();
-
-            //let interation = Interation::new(file_size, CHUNK_SIZE);
-
-            //let buffer = RefCell::new(Buffer::new());
- /*           interation.iter(|bytes| {
-                let mut data: Vec<u8> = vec![0; bytes as usize];
-                file.try_clone()
-                    .expect("Could not clone the file")
-                    .read(&mut data[..])
-                    .expect("Could not read from the file");
-                buffer
-                    .try_borrow_mut()
-                    .expect("Could not borrow the buffer to a normal interation")
-                    .add_data(ChunkData::Data(data));
-            });
-            self.buffers
-                .push(buffer.try_borrow_mut().unwrap().to_owned());*/
-
-            //self.buffers.clone()
-        }
-        pub fn write() {}
     }
+    
+
     #[derive(Debug, Clone)]
     pub struct Interation {
         pub steps: u32,
@@ -204,7 +183,6 @@ pub mod coply {
         {
             for _i in 0..CHUNKS_BY_BUFFER {
                 if self.actual_step <= self.steps {
-                    println!("{:#?}", self);
                     if self.is_last(self.actual_step) {
                         self.actual_step = self.actual_step + 1;
                         iter(self.last_bytes);
@@ -212,6 +190,8 @@ pub mod coply {
                         self.actual_step = self.actual_step + 1;
                         iter(self.bytes);
                     }
+                } else {
+                    break;
                 }
             }
         }

@@ -17,5 +17,4 @@ fn creating_chunk_chain() {
     if let ChunkData::Data(data) = c_1.clone().data {
         assert_eq!(data, vec![6; CHUNK_SIZE as usize]);
     }
-    //assert_eq!(ChunkData [8; 110], c_3.data);
 }
