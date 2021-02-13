@@ -1,13 +1,8 @@
 pub mod coply {
-    use std::{
-        cell::RefCell,
-        fs::{metadata, File},
-        io::Read,
-        rc::Rc,
-    };
+    use std::{borrow::{Borrow, BorrowMut}, cell::RefCell, fs::{File, Metadata, metadata}, io::Read, rc::Rc};
 
     pub const CHUNK_SIZE: u8 = 128;
-    pub const CHUNKS_BY_BUFFER: u8 = 4;
+    pub const CHUNKS_BY_BUFFER: u32 = 4;
 
     pub type ChunkDataType = Vec<u8>;
     type ChunkRef = Rc<RefCell<Chunk>>;
@@ -103,27 +98,64 @@ pub mod coply {
         }
     }
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug)]
     pub struct Manager {
         pub buffers: Vec<Buffer>,
+        pub file: File,
+        pub file_info: Metadata,
+        pub interation: Interation
     }
 
     impl Manager {
-        pub fn new() -> Self {
+        pub fn new(file_path: &str) -> Self {
+            let mut file = File::open(file_path).unwrap();
+            let file_info = Manager::get_file_info(file_path);
+            let file_size = file_info.len();
+            let interation = Interation::new(file_size, CHUNK_SIZE);
             Manager {
                 buffers: Vec::new(),
+                file,
+                file_info,
+                interation
             }
         }
-        pub fn read(&mut self, file_path: &str) -> Vec<Buffer> {
-            let file = Rc::new(File::open(file_path.clone()).expect("Could not open the file"));
+        fn get_file_info(file_path: &str) -> Metadata {
             let file_info =
                 metadata(file_path.clone()).expect("Could not get the metada from the file");
-            let file_size = file_info.len();
-
-            let interation = Interation::new(file_size, CHUNK_SIZE);
-
-            let buffer = RefCell::new(Buffer::new());
+            file_info
+        }
+    
+        pub fn read(&mut self) -> Vec<Buffer> {
+            let mut buffer = Buffer::new();
+            let interation = self.interation.borrow_mut();
+            let file = self.file.borrow_mut();
             interation.iter(|bytes| {
+                let mut data: Vec<u8> = vec![0; bytes as usize];
+                file.read(&mut data).unwrap();
+                buffer.borrow_mut().add_data(ChunkData::Data(data));
+            });
+
+            let mut buffers = self.buffers.to_owned();
+            buffers.push(buffer);
+            self.buffers = buffers.clone();
+            buffers
+            /*self.interation.borrow_mut().iter(|bytes| {
+                let mut data: Vec<u8> = vec![0; bytes as usize];
+                self.t().file.read(&mut data[..]).unwrap();
+                buffer.add_data(ChunkData::Data(data));
+            });*/
+            
+            //self.buffers.push(buffer);
+            //self.buffers.clone().to_owned()
+            //let file = Rc::new(File::open(file_path.clone()).expect("Could not open the file"));
+            //let file_info =
+            //    metadata(file_path.clone()).expect("Could not get the metada from the file");
+            //let file_size = file_info.len();
+
+            //let interation = Interation::new(file_size, CHUNK_SIZE);
+
+            //let buffer = RefCell::new(Buffer::new());
+ /*           interation.iter(|bytes| {
                 let mut data: Vec<u8> = vec![0; bytes as usize];
                 file.try_clone()
                     .expect("Could not clone the file")
@@ -135,14 +167,16 @@ pub mod coply {
                     .add_data(ChunkData::Data(data));
             });
             self.buffers
-                .push(buffer.try_borrow_mut().unwrap().to_owned());
+                .push(buffer.try_borrow_mut().unwrap().to_owned());*/
 
-            self.buffers.clone()
+            //self.buffers.clone()
         }
         pub fn write() {}
     }
+    #[derive(Debug, Clone)]
     pub struct Interation {
-        pub count: u32,
+        pub steps: u32,
+        pub actual_step: u32,
         pub bytes: u8,
         pub last_bytes: u8,
     }
@@ -150,32 +184,39 @@ pub mod coply {
         pub fn new(file_size: u64, chunk_size: u8) -> Self {
             if (file_size % CHUNK_SIZE as u64) == 0 {
                 Interation {
-                    count: (file_size / chunk_size as u64) as u32,
+                    steps: (file_size / chunk_size as u64) as u32,
+                    actual_step: 1,
                     bytes: chunk_size,
                     last_bytes: chunk_size,
                 }
             } else {
                 Interation {
-                    count: ((file_size / chunk_size as u64) + 1) as u32,
+                    steps: ((file_size / chunk_size as u64) + 1) as u32,
+                    actual_step: 1,
                     bytes: chunk_size,
                     last_bytes: (file_size % chunk_size as u64) as u8,
                 }
             }
         }
-        pub fn iter<N>(&self, mut iter: N)
+        pub fn iter<N>(&mut self, mut iter: N)
         where
             N: FnMut(u8) -> (),
         {
-            for i in 1..self.count + 1 {
-                if self.is_last(i) {
-                    iter(self.last_bytes);
-                } else {
-                    iter(self.bytes);
+            for _i in 0..CHUNKS_BY_BUFFER {
+                if self.actual_step <= self.steps {
+                    println!("{:#?}", self);
+                    if self.is_last(self.actual_step) {
+                        self.actual_step = self.actual_step + 1;
+                        iter(self.last_bytes);
+                    } else {
+                        self.actual_step = self.actual_step + 1;
+                        iter(self.bytes);
+                    }
                 }
             }
         }
         pub fn is_last(&self, interation: u32) -> bool {
-            if self.count == interation {
+            if self.steps == interation {
                 true
             } else {
                 false
