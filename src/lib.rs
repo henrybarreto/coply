@@ -1,5 +1,6 @@
 pub mod coply {
-    use std::{borrow::{BorrowMut}, cell::RefCell, fs::{File, Metadata, metadata}, io::{Read, Seek, SeekFrom}, rc::Rc};
+    use std::{borrow::{BorrowMut}, cell::RefCell, fs::{File, Metadata}, io::{Read}, rc::Rc};
+    use std::io::Write;
 
     pub const CHUNK_SIZE: u8 = 128;
     pub const CHUNKS_BY_BUFFER: u32 = 4;
@@ -42,16 +43,18 @@ pub mod coply {
             Rc::new(RefCell::new(chunk))
         }
         pub fn get_reference(chunk_opt: ChunkOpt) -> ChunkRef {
-            chunk_opt.clone().unwrap()
+            chunk_opt.clone()
+                .expect("Could not clone the chunk opt")
         }
         pub fn get_from_option(chunk_opt: ChunkOpt) -> Chunk {
-            Chunk::get_from_reference(chunk_opt.clone().expect("Cloud not get chunk from option"))
+            Chunk::get_from_reference(chunk_opt.clone()
+                .expect("Cloud not get chunk from option"))
         }
         pub fn get_from_reference(chunk_ref: ChunkRef) -> Chunk {
             chunk_ref
                 .clone()
                 .try_borrow_mut()
-                .expect("Could not get the borrow mut")
+                .expect("Could not get the borrow mut from the chunk ref")
                 .to_owned()
         }
     }
@@ -97,6 +100,23 @@ pub mod coply {
             all_data
         }
     }
+    #[derive(Debug)]
+    pub struct Writer {
+        pub file: File
+    }
+    impl Writer {
+        pub fn new(file_path: &str) -> Self {
+            let file = File::create(file_path)
+                .expect("Could not open the file from writer");
+            Writer {
+                file
+            }
+        }
+        pub fn write(&mut self, buffer: Buffer) {
+            self.file.write(&mut buffer.join_data())
+                .expect("Could not write the buffer to a archive");
+        }
+    }
 
     #[derive(Debug)]
     pub struct Reader {
@@ -109,7 +129,7 @@ pub mod coply {
     impl Reader {
         pub fn new(file_path: &str) -> Self {
             let file = File::open(file_path).unwrap();
-            let file_info = Reader::get_file_info(file_path);
+            let file_info = file.metadata().unwrap();
             let file_size = file_info.len();
             let interation = Interation::new(file_size, CHUNK_SIZE);
             Reader {
@@ -143,11 +163,6 @@ pub mod coply {
                  */
                 self.buffers.to_owned()
             }
-        }
-        fn get_file_info(file_path: &str) -> Metadata {
-            let file_info =
-                metadata(file_path.clone()).expect("Could not get the metada from the file");
-            file_info
         }
     }
     
