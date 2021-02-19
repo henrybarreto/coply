@@ -123,7 +123,7 @@ pub mod coply {
         pub buffers: Vec<Buffer>,
         pub file: File,
         pub file_info: Metadata,
-        pub interation: Interation
+        pub interation: Iteration
     }
 
     impl Reader {
@@ -131,7 +131,7 @@ pub mod coply {
             let file = File::open(file_path).unwrap();
             let file_info = file.metadata().unwrap();
             let file_size = file_info.len();
-            let interation = Interation::new(file_size, CHUNK_SIZE);
+            let interation = Iteration::new(file_size, CHUNK_SIZE);
             Reader {
                 buffers: Vec::new(),
                 file,
@@ -139,8 +139,8 @@ pub mod coply {
                 interation
             }
         }
-        pub fn read(&mut self) -> Vec<Buffer> { // What is happing here?
-            if self.interation.actual_step <= self.interation.steps { // Interation and Reader are hardly linked...
+        pub fn read(&mut self) -> Vec<Buffer> { // What is happening here?
+            if self.interation.actual_step <= self.interation.steps { // Iteration and Reader are hardly linked...
                 let file = self.file.borrow_mut();
                 let mut buffer = Buffer::new();
                 let interation = self.interation.borrow_mut();
@@ -156,10 +156,10 @@ pub mod coply {
                 buffers
             } else {
                 /*
-                 * interation.iter and its internal condition checks bytes size to read
+                 * iteration.iter and its internal condition checks bytes size to read
                  * in this scope, the condition avoid panic of the line 48
                  * I guess it is highly coupled
-                 * REFACTOR EITHER READER, INTERATION OR BOTH
+                 * REFACTOR EITHER READER, ITERATION OR BOTH
                  */
                 self.buffers.to_owned()
             }
@@ -168,23 +168,23 @@ pub mod coply {
     
 
     #[derive(Debug, Clone)]
-    pub struct Interation {
+    pub struct Iteration {
         pub steps: u32,
         pub actual_step: u32,
         pub bytes: u8,
         pub last_bytes: u8,
     }
-    impl Interation {
+    impl Iteration {
         pub fn new(file_size: u64, chunk_size: u8) -> Self {
             if (file_size % CHUNK_SIZE as u64) == 0 {
-                Interation {
+                Iteration {
                     steps: (file_size / chunk_size as u64) as u32,
                     actual_step: 1,
                     bytes: chunk_size,
                     last_bytes: chunk_size,
                 }
             } else {
-                Interation {
+                Iteration {
                     steps: ((file_size / chunk_size as u64) + 1) as u32,
                     actual_step: 1,
                     bytes: chunk_size,
@@ -210,8 +210,8 @@ pub mod coply {
                 }
             }
         }
-        pub fn is_last(&self, interation: u32) -> bool {
-            if self.steps == interation {
+        pub fn is_last(&self, iteration: u32) -> bool {
+            if self.steps == iteration {
                 true
             } else {
                 false
