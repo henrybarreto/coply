@@ -1,4 +1,5 @@
-use coply::coply::{Buffer, ChunkData};
+use coply::buffer::Buffer;
+use coply::chunk_data::ChunkData;
 
 #[test]
 fn joining_all_data_from_buffer() {

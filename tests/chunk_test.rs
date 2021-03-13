@@ -1,4 +1,7 @@
-use coply::coply::*;
+use coply::chunk::Chunk;
+use coply::chunk_data::ChunkData;
+use coply::{ChunkOpt, CHUNK_SIZE};
+
 #[test]
 fn creating_chunk_chain() {
     let mut c_1 = Chunk::new(ChunkData::Data(vec![6; CHUNK_SIZE as usize]));
