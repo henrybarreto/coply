@@ -6,6 +6,7 @@ use std::borrow::BorrowMut;
 use std::fs::{File, Metadata};
 use std::io::Read;
 
+/// This structure is used to execute reading operation in a file
 #[derive(Debug)]
 pub struct Reader {
     pub buffers: Vec<Buffer>,
@@ -27,6 +28,7 @@ impl Reader {
             iteration,
         }
     }
+    /// Read the file into a vector of Buffers
     pub fn read(&mut self) -> Vec<Buffer> {
         // What is happening here?
         if self.iteration.actual_step <= self.iteration.steps {

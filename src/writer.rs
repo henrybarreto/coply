@@ -2,6 +2,7 @@ use crate::buffer::Buffer;
 use std::fs::File;
 use std::io::Write;
 
+/// This structure is used to execute writing operation in a file
 #[derive(Debug)]
 pub struct Writer {
     pub file: File,
@@ -11,6 +12,7 @@ impl Writer {
         let file = File::create(file_path).expect("Could not open the file from writer");
         Writer { file }
     }
+    /// Writes in a file the Buffer data
     pub fn write(&mut self, buffer: Buffer) {
         self.file
             .write(&mut buffer.join_data())

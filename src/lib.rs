@@ -15,9 +15,12 @@ pub mod writer;
 
 use chunk::Chunk;
 
+/// Default size of each chunk from a reading file hero
 pub const CHUNK_SIZE: u8 = 128;
+/// Default quantity of chunk by buffer
 pub const CHUNKS_BY_BUFFER: u32 = 4;
 
+/// Type of each chunk
 pub type ChunkDataType = Vec<u8>;
-type ChunkRef = Rc<RefCell<Chunk>>;
+pub type ChunkRef = Rc<RefCell<Chunk>>;
 pub type ChunkOpt = Option<ChunkRef>;

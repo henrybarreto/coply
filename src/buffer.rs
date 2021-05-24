@@ -2,6 +2,7 @@ use crate::chunk::Chunk;
 use crate::chunk_data::ChunkData;
 use crate::ChunkOpt;
 
+/// This structure stores an optional chain of chunks
 #[derive(Debug, Clone)]
 pub struct Buffer {
     pub chunks: ChunkOpt,
@@ -13,6 +14,7 @@ impl Buffer {
             chunks: Option::None,
         }
     }
+    /// Add new ChunkData to the chain
     pub fn add_data(&mut self, data: ChunkData) -> Chunk {
         let chunk = Chunk::new(data);
         if let Option::None = self.chunks.clone() {
@@ -26,6 +28,7 @@ impl Buffer {
         }
         Chunk::get_from_option(self.chunks.clone())
     }
+    /// Join all chunks into an only vector
     pub fn join_data(&self) -> Vec<u8> {
         let chunk = Chunk::get_from_option(self.chunks.clone());
         let mut actual_chunk = chunk.clone();
