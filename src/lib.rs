@@ -9,7 +9,7 @@ use std::{
 pub mod buffer;
 pub mod chunk;
 pub mod chunk_data;
-mod iteration;
+pub mod iteration;
 pub mod reader;
 pub mod writer;
 
