@@ -3,9 +3,7 @@ use crate::{ChunkOpt, ChunkRef};
 use std::cell::RefCell;
 use std::rc::Rc;
 
-/**
-This structure represents a chain of chunks, what is a ChunkData and a next ChunkOpt.
-*/
+/// This structure represents a chain of chunks, what is a ChunkData and a next ChunkOpt.
 #[derive(Debug, Clone)]
 pub struct Chunk {
     pub data: ChunkData,
@@ -22,9 +20,11 @@ impl Chunk {
     pub fn set_option(chunk: Chunk) -> ChunkOpt {
         Option::Some(Chunk::set_reference(chunk))
     }
+    /// Create a ChunkRef from a Chunk
     pub fn set_reference(chunk: Chunk) -> ChunkRef {
         Rc::new(RefCell::new(chunk))
     }
+    /// Get a ChunkRef from a ChunkOpt
     pub fn get_reference(chunk_opt: ChunkOpt) -> ChunkRef {
         chunk_opt.clone().expect("Could not clone the chunk opt")
     }
