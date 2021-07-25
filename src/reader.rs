@@ -9,7 +9,7 @@ use std::io::Read;
 /// This structure is used to execute reading operation in a file
 #[derive(Debug)]
 pub struct Reader {
-    pub buffers: Vec<Buffer>,
+    // pub buffers: Vec<Buffer>,
     pub file: File,
     pub file_info: Metadata,
     pub iteration: Iteration,
@@ -22,14 +22,15 @@ impl Reader {
         let file_size = file_info.len();
         let iteration = Iteration::new(file_size, CHUNK_SIZE);
         Reader {
-            buffers: Vec::new(),
+            // buffers: Vec::new(),
             file,
             file_info,
             iteration,
         }
     }
     /// Read the file into a vector of Buffers
-    pub fn read(&mut self) -> Vec<Buffer> {
+    pub fn read(&mut self) -> Buffer {
+        // pub fn read(&mut self) -> Vec<Buffer> {
         // What is happening here?
         if self.iteration.actual_step <= self.iteration.steps {
             // Iteration and Reader are hardly linked...
@@ -42,10 +43,10 @@ impl Reader {
                 buffer.borrow_mut().add_data(ChunkData::Data(data));
             });
 
-            let mut buffers = self.buffers.to_owned();
-            buffers.push(buffer);
-            self.buffers = buffers.clone();
-            buffers
+            // let mut buffers = self.buffers.to_owned();
+            // buffers.push(buffer);
+            // self.buffers = buffers.clone();
+            buffer
         } else {
             /*
              * iteration.iter and its internal condition checks bytes size to read
@@ -53,7 +54,8 @@ impl Reader {
              * I guess it is highly coupled
              * REFACTOR EITHER READER, ITERATION OR BOTH
              */
-            self.buffers.clone().to_owned()
+            // self.buffers.clone().to_owned()
+            Buffer::new()
         }
     }
 }

@@ -1,10 +1,7 @@
-use std::{
-    borrow::BorrowMut,
-    cell::RefCell,
-    fs::{File, Metadata},
-    io::Read,
-    rc::Rc,
-};
+//! THIS IS A STUDY PROJECT, EVERYTHING HERE CAN AND WILL BE IMPROVED AS SOON AS POSSIBLE.
+//! This is a library crate what prove structures to building a copy file tool.
+
+use std::{cell::RefCell, rc::Rc};
 
 pub mod buffer;
 pub mod chunk;

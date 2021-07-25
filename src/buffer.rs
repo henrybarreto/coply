@@ -28,16 +28,17 @@ impl Buffer {
         }
         Chunk::get_from_option(self.chunks.clone())
     }
-    /// Join all chunks into an only vector
+    /// Join all chunks into an vector
     pub fn join_data(&self) -> Vec<u8> {
-        let chunk = Chunk::get_from_option(self.chunks.clone());
+        let chunk = Chunk::get_from_option(self.chunks.clone()); // QUEBRA
         let mut actual_chunk = chunk.clone();
         let mut all_data: Vec<u8> = vec![];
         loop {
             if let ChunkData::Data(data) = actual_chunk.data.clone() {
                 all_data = [data, all_data].concat();
-                if let ChunkOpt::Some(_next) = actual_chunk.next.clone() {
-                    actual_chunk = Chunk::get_from_option(actual_chunk.next);
+                if let ChunkOpt::Some(next) = actual_chunk.next.clone() {
+                    // actual_chunk = Chunk::get_from_option(actual_chunk.next);
+                    actual_chunk = Chunk::get_from_reference(next);
                 } else {
                     break;
                 }
