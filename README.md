@@ -22,3 +22,4 @@ Using run
 cargo run file_a.txt file_b.txt
 ```
 
+Disclaimer: This is a study project
